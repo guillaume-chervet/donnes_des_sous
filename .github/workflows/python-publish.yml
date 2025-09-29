@@ -32,12 +32,21 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           uv --version
-      - name: Build release distributions
+      - name: Run Tests
         run: |
           uv venv 
           uv sync 
           source .venv/bin/activate
           uv run pytest -q --cov=donnes_des_sous --cov-report=term-missing --cov-report=lcov
+      - name: Bump version and push tag
+        id: tag_release
+        uses: mathieudutour/github-tag-action@v6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN  }}
+      - name: Publish to PyPI
+        run: |
+          
+          sed -i 's/^version = ".*"/version = "${{ steps.tag_release.outputs.new_version }}"/' pyproject.toml
           uv build
           uv publish --token "${{ secrets.PIP_TOKEN }}"
       - name: Upload distributions
